@@ -58,9 +58,9 @@ cep_df['constitucion'] = cep_df['constitucion'].replace({r"^\s*<NA>\s*$": pd.NA}
 cep_df = cep_df.dropna(subset=['constitucion'])
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
-DEVICE = "cuda"
+DEVICE = "cuda:1"
 N_SIMS = len(cep_df)
-BATCH_SIZE = 1
+BATCH_SIZE = 128
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForCausalLM.from_pretrained(MODEL_NAME).to(DEVICE)
@@ -99,7 +99,7 @@ for batch_start in tqdm(range(0, N_SIMS, BATCH_SIZE), desc='simulating'):
         [ 
             {"role": "system", "content": context}, 
             {"role": "user", "content": ( 
-                "Pregunta: <¿Por cuál de las siguientes opciones votaste en el plebiscito de salida para la nueva constitución en Chile en septiembre de 2022?> " 
+                "Pregunta: <¿Usted aprueba o rechaza una nueva Constitución?> " 
                 "Alternativas: [Apruebo, Rechazo, Ninguna]. " 
                 'Responde en formato JSON con las siguientes llaves: "razonamiento" (en máximo 100 palabras), donde explicas tu razonamiento para responder la pregunta, y "respuesta", que muestra la alternativa que elegiste para responder a la pregunta.' 
                 )
@@ -128,48 +128,47 @@ for batch_start in tqdm(range(0, N_SIMS, BATCH_SIZE), desc='simulating'):
         outputs = model.generate(
             **inputs, 
             max_new_tokens=500,
-            # temperature=1.,
             eos_token_id=tokenizer.eos_token_id,
             pad_token_id=tokenizer.eos_token_id,
         )
 
     gen_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
     
-for i, (gen_text, sample) in enumerate(zip(gen_texts, batch_samples.itertuples())):
-    match = re.search(r'\{[\s\S]*?\}', gen_text)
-    clean_text = match.group() if match else "{}"
-    # Clean common JSON errors
-    clean_text = fix_common_json_errors(clean_text)
-    try:
-        result = json.loads(clean_text)
-    except Exception:
+    for i, (gen_text, sample) in enumerate(zip(gen_texts, batch_samples.itertuples())):
+        match = re.search(r'\{[\s\S]*?\}', gen_text)
+        clean_text = match.group() if match else "{}"
+        # Clean common JSON errors
+        clean_text = fix_common_json_errors(clean_text)
         try:
-            result = ast.literal_eval(clean_text)
+            result = json.loads(clean_text)
         except Exception:
-            malformed.append(gen_text)
-            result = {"razonamiento": 'E', "respuesta": 'E'}
+            try:
+                result = ast.literal_eval(clean_text)
+            except Exception:
+                malformed.append(gen_text)
+                result = {"razonamiento": 'E', "respuesta": 'E'}
 
-    explanation = result.get('razonamiento') or 'E'
-    simulated_answer = result.get('respuesta') or 'E'
-    real_answer = sample.constitucion
+        explanation = result.get('razonamiento') or 'E'
+        simulated_answer = result.get('respuesta') or 'E'
+        real_answer = sample.constitucion
 
-    rows.append({
-        "simulation_id": batch_start + i,
-        "real_answer": real_answer,
-        "simulated_answer": simulated_answer,
-        "explanation": explanation,
-        "edad": sample.edad,
-        "sex": sample.sex,
-        "region": sample.region,
-        "zone": sample.zone,
-        "gse": sample.gse,
-        "esc": sample.esc,
-        "pol": sample.pol,
-    })
+        rows.append({
+            "simulation_id": batch_start + i,
+            "real_answer": real_answer,
+            "simulated_answer": simulated_answer,
+            "explanation": explanation,
+            "edad": sample.edad,
+            "sex": sample.sex,
+            "region": sample.region,
+            "zone": sample.zone,
+            "gse": sample.gse,
+            "esc": sample.esc,
+            "pol": sample.pol,
+        })
 
 
-answers = pd.DataFrame(rows).to_csv(DATA_DIR / 'generated' / 'simulated_baseline_.csv', index=False)
-with open(DATA_DIR / 'generated' / 'malformed_answers.txt', 'w', encoding='utf-8') as f:
+answers = pd.DataFrame(rows).to_csv(DATA_DIR / 'generated' / 'baseline_constitucion_1B.csv', index=False)
+with open(DATA_DIR / 'generated' / 'malformed_answers_1B.txt', 'w', encoding='utf-8') as f:
     for txt in malformed:
         f.write(txt)
         f.write('\n' + '-'*40 + '\n')
