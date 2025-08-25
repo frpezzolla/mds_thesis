@@ -103,6 +103,15 @@ labels_constitucion = {
     "-9":  "No contesta"
 }
 
+labels_aborto = {
+    "1":   "El aborto debe estar siempre prohibido",
+    "2":   "El aborto solo debe estar permitido en casos",
+    "3":   "El aborto debe ser una libre opcion para las mujeres",
+    "-8":  "No sabe",
+    "-9":  "No contesta"
+}
+
+
 # labels_zone = {
 #     '1': 'an urban',
 #     '2': 'a rural',

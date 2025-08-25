@@ -22,6 +22,7 @@ cep_raw_df = pd.read_csv(DATA_DIR / "cleaned" / "cep_no_na.csv")[[
     'edad', # edad
     'zona_u_r', # zona rural/urbana
     'constitucion_1', # constitucion aprueba/rechaza
+    'religion_14', # opinion sobre el aborto
     ]]
 
 # def clean_row(row):
@@ -75,6 +76,7 @@ def get_cep_clean():
     cep_df = process_column(cep_df, 'esc_nivel_1_c', labels_esc_c)
     cep_df = process_column(cep_df, 'edad')
     cep_df = process_column(cep_df, 'constitucion_1', labels_constitucion, rename='constitucion')
+    cep_df = process_column(cep_df, 'religion_14', labels_aborto, rename='abortion')
     
     cep_df = simplify_columns(cep_df, 'esc_nivel_1_b', 'esc_nivel_1_c', 'esc')
     cep_df = simplify_columns(cep_df, 'region_2', 'region_3', 'region')
