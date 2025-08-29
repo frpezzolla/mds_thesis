@@ -28,29 +28,17 @@ def build_context(row):
     
     return context
 
-class Message:
-    question = None
-    choices = None
+
+INSTRUCT = (
+        'Responde en formato JSON con las siguientes llaves: '
+        '"razonamiento" (en máximo 100 palabras), donde explicas tu '
+        'razonamiento para responder la pregunta, y "respuesta", que '
+        'muestra la alternativa que elegiste para responder a la pregunta.'
+    )
+
+def build_query(topic: str = 'constitucion'):
+    if topic == 'constitucion':
+        question = "Pregunta: <¿Usted aprueba o rechaza una nueva Constitución?>"
+        choices = "Alternativas: [Apruebo, Rechazo, Ninguna]."
     
-    def __str__():
-
-        instruct = (
-            'Responde en formato JSON con las siguientes llaves: '
-            '"razonamiento" (en máximo 100 palabras), donde explicas tu '
-            'razonamiento para responder la pregunta, y "respuesta", que '
-            'muestra la alternativa que elegiste para responder a la pregunta.'
-        )
-
-        return self.question + self.choices + self.instruct
-
-# batch_messages = [ 
-#     [ 
-#         {"role": "system", "content": context}, 
-#         {"role": "user", "content": ( 
-#             "Pregunta: <¿Usted aprueba o rechaza una nueva Constitución?> " 
-#             "Alternativas: [Apruebo, Rechazo, Ninguna]. " 
-#             'Responde en formato JSON con las siguientes llaves: "razonamiento" (en máximo 100 palabras), donde explicas tu razonamiento para responder la pregunta, y "respuesta", que muestra la alternativa que elegiste para responder a la pregunta.' 
-#             )
-#         }
-#     ] for context in batch_contexts 
-# ]
+    return question + choices + INSTRUCT
